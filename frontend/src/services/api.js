@@ -17,3 +17,4 @@ export const loginUser = (credentials) => API.post('/auth/login', credentials);
 export const fetchMentors = () => API.get('/mentors');
 export const bookSession = (sessionData) => API.post('/sessions/book', sessionData);
 export const fetchMySessions = () => API.get('/sessions/my-sessions');
+export const updateSessionStatus = (sessionId, status) => API.patch(`/sessions/${sessionId}/status`, { status });

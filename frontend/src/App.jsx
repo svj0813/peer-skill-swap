@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMentors, fetchMySessions, loginUser, registerUser, bookSession } from './services/api';
+import { fetchMentors, fetchMySessions, loginUser, registerUser, bookSession, updateSessionStatus } from './services/api';
 import { BookOpen, LogOut, Search } from 'lucide-react';
 
 export default function App() {
@@ -77,6 +77,15 @@ export default function App() {
       loadSessions();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to book session');
+    }
+  };
+
+  const handleStatusUpdate = async (sessionId, status) => {
+    try {
+      await updateSessionStatus(sessionId, status);
+      loadSessions(); // Reload instantly to show the new status
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update session');
     }
   };
 
@@ -205,12 +214,14 @@ export default function App() {
                         </div>
                       </div>
 
-                      <button 
-                        onClick={() => setSelectedMentor(m)}
-                        style={{ width: '100%', padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                      >
-                        Request 15-45 Min Session
-                      </button>
+                      {user.id !== m._id && (
+                        <button 
+                          onClick={() => setSelectedMentor(m)}
+                          style={{ width: '100%', padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Request 15-45 Min Session
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -220,22 +231,49 @@ export default function App() {
                 <h3 style={{ marginTop: 0 }}>Scheduled Micro-Mentorship Sessions</h3>
                 {sessions.length === 0 ? <p style={{ color: '#64748b' }}>No sessions booked yet.</p> : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {sessions.map(s => (
-                      <div key={s._id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <h4 style={{ margin: '0 0 4px 0' }}>{s.topic}</h4>
-                          <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                            Learner: {s.learner?.name} | Mentor: {s.mentor?.name}
-                          </p>
-                          <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>
-                            {s.duration} mins • {s.mode} ({s.meetingLocation})
-                          </span>
+                    {sessions.map(s => {
+                      const isMentor = s.mentor?._id === user.id;
+
+                      return (
+                        <div key={s._id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                              <h4 style={{ margin: 0 }}>{s.topic}</h4>
+                              {isMentor && <span style={{ background: '#fef08a', color: '#854d0e', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>YOU ARE TEACHING</span>}
+                            </div>
+                            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                              Learner: {s.learner?.name} | Mentor: {s.mentor?.name}
+                            </p>
+                            <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>
+                              {s.duration} mins • {s.mode} ({s.meetingLocation})
+                            </span>
+                          </div>
+                          
+                          {/* Dynamic Status and Actions */}
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                            <span style={{ 
+                              background: s.status === 'accepted' ? '#dcfce7' : s.status === 'cancelled' ? '#fee2e2' : '#fef3c7', 
+                              color: s.status === 'accepted' ? '#166534' : s.status === 'cancelled' ? '#991b1b' : '#92400e', 
+                              padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 
+                            }}>
+                              {s.status.toUpperCase()}
+                            </span>
+
+                            {/* Show Accept/Decline ONLY if logged-in user is the Mentor and status is Pending */}
+                            {isMentor && s.status === 'pending' && (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button onClick={() => handleStatusUpdate(s._id, 'accepted')} style={{ padding: '6px 12px', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>
+                                  Accept
+                                </button>
+                                <button onClick={() => handleStatusUpdate(s._id, 'cancelled')} style={{ padding: '6px 12px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>
+                                  Decline
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <span style={{ background: s.status === 'accepted' ? '#dcfce7' : '#fef3c7', color: s.status === 'accepted' ? '#166534' : '#92400e', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>
-                          {s.status.toUpperCase()}
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
