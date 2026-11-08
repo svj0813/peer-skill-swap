@@ -27,7 +27,7 @@ This is a full-stack campus micro-mentorship platform we built for our Design Th
 * **Jagannati Shauryavardhan** 
 * **Abhishek Donkennavavar** 
 * **Atul Kumar Mishra** 
-*     (Faculty Mentor: Prof. Arati C.)* <!--[cite: 1] -->
+  **(Faculty Mentor: Prof. Arati C.)* <!--[cite: 1] -->
 
 ## How to run it locally
 
