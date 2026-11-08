@@ -23,10 +23,10 @@ This is a full-stack campus micro-mentorship platform we built for our Design Th
 
 ## The Team 
 
-* **Devansh Arora** – CEO <!--[cite: 9] -->
-* **Jagannati Shauryavardhan** – CFO / CMO <!--[cite: 9] -->
-* **Abhishek Donkennavavar** – COO / CTO <!--[cite: 9] -->
-* **Atul Kumar Mishra** – Research & Documentation Lead <!--[cite: 9] -->
+* **Devansh Arora**
+* **Jagannati Shauryavardhan** 
+* **Abhishek Donkennavavar** 
+* **Atul Kumar Mishra** 
 *(Faculty Mentor: Prof. Arati C.)* <!--[cite: 1] -->
 
 ## How to run it locally
