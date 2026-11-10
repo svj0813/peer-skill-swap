@@ -1,40 +1,81 @@
-# Peer Skill Swap
+# Peer Skill Swap 🎓
 
-This is a full-stack campus micro-mentorship platform we built for our Design Thinking for Innovation and Entrepreneurship (DTIE) course at REVA University. It lets college students connect with peers on campus for quick, focused skill-sharing sessions. <!--[cite: 1, 11] -->
+A full-stack campus micro-mentorship platform engineered for the **Design Thinking for Innovation and Entrepreneurship (DTIE)** course at **REVA University**. **Peer Skill Swap** enables university students to exchange peer-to-peer mentorship, bridge knowledge gaps, and collaborate seamlessly across departments.
 
-## Try it out
+---
 
-*(Live Link: Coming soon once deployed!)*
+## 🚀 Key Features
 
-## What it does
+* **Secure Authentication:** User registration and login powered by JSON Web Tokens (JWT) and `bcrypt` password hashing.
+* **Peer Discovery & Search:** Dynamic search filter to locate peer mentors by specific skills (e.g., C++, Python, Figma) or academic departments.
+* **Micro-Mentorship Sessions:** Flexible booking system for short 15–45 minute help sessions, avoiding the friction of long-term tutoring commitments.
+* **Embedded 1-on-1 Video Calls:** Integrated real-time video conferencing via Jitsi Meet for online sessions, complete with screen sharing and instant messaging.
+* **Campus Credit Economy:** Gamified credit system where learners start with credits, spend 1 credit to request guidance, and earn credits back by teaching peers.
+* **Interactive Mentor Dashboard:** Real-time session status tracking allowing mentors to review, accept, or decline pending requests.
 
-* **Accounts:** You can sign up and log in (passwords are hashed using bcrypt so they are secure).
-* **Find Peers:** Search for students by specific skills (like C++, Python, or Figma) or browse by department. <!--[cite: 2, 3] -->
-* **Micro Sessions:** You can book short 15–45 minute help sessions (on campus or online) instead of committing to long tutoring programs. <!--[cite: 2, 22] -->
-* **Credit Economy:** Students start with 10 free credits. You spend 1 credit to request help, and earn credits back when you teach others. <!--[cite: 2] -->
-* **Fast Updates:** Your dashboard instantly tracks your pending and accepted session requests.
+---
 
-## Stuff I used
+## 🛠️ Tech Stack
 
-* **Frontend:** React, Vite, Lucide Icons
-* **Backend:** Node.js, Express
-* **Database:** MongoDB (Mongoose)
-* **Auth:** JSON Web Tokens (JWT)
+* **Frontend:** React, Vite, Lucide React Icons
+* **Backend:** Node.js, Express.js
+* **Database:** MongoDB (Mongoose ORM)
+* **Containerization:** Docker / Podman (`peer-skill-mongo`)
+* **Authentication:** JSON Web Tokens (JWT) & BcryptJS
+* **Video Integration:** Jitsi Meet API
 
-## The Team 
+---
+
+## 👥 Project Team
 
 * **Devansh Arora**
-* **Jagannati Shauryavardhan** 
-* **Abhishek Donkennavavar** 
-* **Atul Kumar Mishra** 
-  **(Faculty Mentor: Prof. Arati C.)* <!--[cite: 1] -->
+* **Jagannati Shauryavardhan**
+* **Abhishek Donkennavavar**
+* **Atul Kumar Mishra**
 
-## How to run it locally
+**Faculty Mentor:** Prof. Arati C.
 
-1. Clone this repo.
-2. Open a terminal, go into the `backend` folder, and run `npm install`.
-3. Make a `.env` file in the `backend` folder and add your `MONGO_URI`, `PORT=5000`, and a `JWT_SECRET`.
-4. Run `node seed.js` to populate test mentors, then run `npm run dev` to start the backend.
-5. Open a second terminal, go into the `frontend` folder, and run `npm install`.
-6. Run `npm run dev` and open `http://localhost:5173` in your browser.
-7. 
+---
+
+## 💻 Local Setup & Execution Guide
+
+### Prerequisites
+* [Node.js](https://nodejs.org/) (v18 or higher)
+* [Docker](https://www.docker.com/) or [Podman](https://podman.io/)
+
+### 1. Clone the Repository
+```bash
+git clone [https://github.com/svj0813/peer-skill-swap.git](https://github.com/svj0813/peer-skill-swap.git)
+cd peer-skill-swap
+```
+
+### 2. Database & Backend Setup
+```bash
+# Start MongoDB container
+sudo docker run -d -p 27017:27017 --name peer-skill-mongo mongo
+
+# Navigate to backend and install dependencies
+cd backend
+npm install
+
+# Create environment configuration (.env)
+cat << EOT > .env
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/peerskillswap
+JWT_SECRET=supersecretkey123
+EOT
+
+# Seed test data and start server
+node seed.js
+npm run dev
+```
+
+### 3. Frontend Setup
+Open a new terminal session and run:
+```bash
+cd peer-skill-swap/frontend
+npm install
+npm run dev
+```
+
+Access the application in your browser at `http://localhost:5173`.
