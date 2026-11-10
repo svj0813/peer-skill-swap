@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMentors, fetchMySessions, loginUser, registerUser, bookSession, updateSessionStatus } from './services/api';
-import { BookOpen, LogOut, Search } from 'lucide-react';
+import { BookOpen, LogOut, Search, Video, X } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
@@ -17,6 +17,9 @@ export default function App() {
   const [bookingTopic, setBookingTopic] = useState('');
   const [bookingDuration, setBookingDuration] = useState(30);
   const [bookingMode, setBookingMode] = useState('Campus Spot');
+
+  // Video Call State
+  const [activeVideoSession, setActiveVideoSession] = useState(null);
 
   useEffect(() => {
     loadMentors();
@@ -63,13 +66,17 @@ export default function App() {
   const handleBookSession = async (e) => {
     e.preventDefault();
     try {
+      const meetingRoom = bookingMode === 'Online' 
+        ? `https://meet.jit.si/PeerSkillSwap-${Date.now()}` 
+        : 'Library 2nd Floor';
+
       await bookSession({
         mentorId: selectedMentor._id,
         topic: bookingTopic,
         duration: Number(bookingDuration),
         mode: bookingMode,
         scheduledTime: new Date(Date.now() + 3600000 * 24).toISOString(),
-        meetingLocation: bookingMode === 'Campus Spot' ? 'Library 2nd Floor' : 'Google Meet'
+        meetingLocation: meetingRoom
       });
       alert('Session request sent successfully!');
       setSelectedMentor(null);
@@ -83,7 +90,7 @@ export default function App() {
   const handleStatusUpdate = async (sessionId, status) => {
     try {
       await updateSessionStatus(sessionId, status);
-      loadSessions(); // Reload instantly to show the new status
+      loadSessions();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update session');
     }
@@ -233,6 +240,11 @@ export default function App() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {sessions.map(s => {
                       const isMentor = s.mentor?._id === user.id;
+                      const isOnline = s.mode === 'Online';
+                      const isAccepted = s.status === 'accepted';
+                      const meetingUrl = s.meetingLocation?.startsWith('http') 
+                        ? s.meetingLocation 
+                        : `https://meet.jit.si/PeerSkillSwap-${s._id}`;
 
                       return (
                         <div key={s._id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -241,7 +253,7 @@ export default function App() {
                               <h4 style={{ margin: 0 }}>{s.topic}</h4>
                               {isMentor && <span style={{ background: '#fef08a', color: '#854d0e', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>YOU ARE TEACHING</span>}
                             </div>
-                            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#64748b' }}>
                               Learner: {s.learner?.name} | Mentor: {s.mentor?.name}
                             </p>
                             <span style={{ fontSize: '12px', color: '#2563eb', fontWeight: 500 }}>
@@ -249,7 +261,6 @@ export default function App() {
                             </span>
                           </div>
                           
-                          {/* Dynamic Status and Actions */}
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                             <span style={{ 
                               background: s.status === 'accepted' ? '#dcfce7' : s.status === 'cancelled' ? '#fee2e2' : '#fef3c7', 
@@ -259,7 +270,17 @@ export default function App() {
                               {s.status.toUpperCase()}
                             </span>
 
-                            {/* Show Accept/Decline ONLY if logged-in user is the Mentor and status is Pending */}
+                            {/* Show 1-on-1 Video Call Button if Accepted & Online */}
+                            {isAccepted && isOnline && (
+                              <button 
+                                onClick={() => setActiveVideoSession({ ...s, videoUrl: meetingUrl })}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                              >
+                                <Video size={16} /> Join Video Room
+                              </button>
+                            )}
+
+                            {/* Show Accept/Decline ONLY if logged-in user is Mentor and pending */}
                             {isMentor && s.status === 'pending' && (
                               <div style={{ display: 'flex', gap: '6px' }}>
                                 <button onClick={() => handleStatusUpdate(s._id, 'accepted')} style={{ padding: '6px 12px', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>
@@ -282,8 +303,9 @@ export default function App() {
         )}
       </main>
 
+      {/* Booking Modal */}
       {selectedMentor && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '450px' }}>
             <h3 style={{ marginTop: 0 }}>Book Session with {selectedMentor.name}</h3>
             <form onSubmit={handleBookSession} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -320,7 +342,7 @@ export default function App() {
                   style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
                   <option value="Campus Spot">On-Campus Spot (Library / Canteen)</option>
-                  <option value="Online">Online Video Call</option>
+                  <option value="Online">Online 1-on-1 Video Call</option>
                 </select>
               </div>
 
@@ -334,6 +356,33 @@ export default function App() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* 1-on-1 Embedded Video Call Modal */}
+      {activeVideoSession && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.95)', display: 'flex', flexDirection: 'column', zIndex: 1000, padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', marginBottom: '12px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>🎥 1-on-1 Session: {activeVideoSession.topic}</h3>
+              <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>
+                Learner: {activeVideoSession.learner?.name} | Mentor: {activeVideoSession.mentor?.name}
+              </p>
+            </div>
+            <button 
+              onClick={() => setActiveVideoSession(null)}
+              style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              <X size={18} /> End Call
+            </button>
+          </div>
+
+          <iframe 
+            src={activeVideoSession.videoUrl}
+            title="Peer Skill Swap Video Room"
+            allow="camera; microphone; display-capture; autoplay; clipboard-write"
+            style={{ width: '100%', height: '100%', border: 'none', borderRadius: '12px', background: '#000' }}
+          />
         </div>
       )}
     </div>
