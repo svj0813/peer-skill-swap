@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchMentors, fetchMySessions, loginUser, registerUser, bookSession, updateSessionStatus } from './services/api';
-import { BookOpen, LogOut, Search, Video, X } from 'lucide-react';
+import { BookOpen, LogOut, Search, Video, X, Star, CheckCircle } from 'lucide-react';
 
 const DEPARTMENTS = [
   'B.Tech - Computer Science',
@@ -31,6 +31,10 @@ export default function App() {
   const [bookingMode, setBookingMode] = useState('Campus Spot');
 
   const [activeVideoSession, setActiveVideoSession] = useState(null);
+
+  // Rating Modal state
+  const [completingSession, setCompletingSession] = useState(null);
+  const [rating, setRating] = useState(5);
 
   useEffect(() => {
     loadMentors();
@@ -104,6 +108,26 @@ export default function App() {
       loadSessions();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to update session');
+    }
+  };
+
+  const handleCompleteWithRating = async (e) => {
+    e.preventDefault();
+    try {
+      await updateSessionStatus(completingSession._id, 'completed', rating);
+      setCompletingSession(null);
+      
+      // Update local credit balance UI
+      if (user.id === completingSession.learner._id) {
+        setUser({ ...user, credits: user.credits - 1 });
+      } else if (user.id === completingSession.mentor._id) {
+        setUser({ ...user, credits: user.credits + 1 });
+      }
+
+      loadSessions();
+      loadMentors();
+    } catch (err) {
+      alert('Failed to complete session');
     }
   };
 
@@ -283,6 +307,7 @@ export default function App() {
                       const isMentor = s.mentor?._id === user.id;
                       const isOnline = s.mode === 'Online';
                       const isAccepted = s.status === 'accepted';
+                      const isCompleted = s.status === 'completed';
                       const meetingUrl = s.meetingLocation?.startsWith('http') 
                         ? s.meetingLocation 
                         : `https://meet.jit.si/PeerSkillSwap-${s._id}`;
@@ -304,20 +329,30 @@ export default function App() {
                           
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                             <span style={{ 
-                              background: s.status === 'accepted' ? '#dcfce7' : s.status === 'cancelled' ? '#fee2e2' : '#fef3c7', 
-                              color: s.status === 'accepted' ? '#166534' : s.status === 'cancelled' ? '#991b1b' : '#92400e', 
+                              background: isCompleted ? '#e0e7ff' : s.status === 'accepted' ? '#dcfce7' : s.status === 'cancelled' ? '#fee2e2' : '#fef3c7', 
+                              color: isCompleted ? '#3730a3' : s.status === 'accepted' ? '#166534' : s.status === 'cancelled' ? '#991b1b' : '#92400e', 
                               padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 
                             }}>
                               {s.status.toUpperCase()}
                             </span>
 
-                            {isAccepted && isOnline && (
-                              <button 
-                                onClick={() => setActiveVideoSession({ ...s, videoUrl: meetingUrl })}
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                              >
-                                <Video size={16} /> Join Video Room
-                              </button>
+                            {isAccepted && (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {isOnline && (
+                                  <button 
+                                    onClick={() => setActiveVideoSession({ ...s, videoUrl: meetingUrl })}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                  >
+                                    <Video size={14} /> Join Video
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => setCompletingSession(s)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                >
+                                  <CheckCircle size={14} /> Mark Complete
+                                </button>
+                              </div>
                             )}
 
                             {isMentor && s.status === 'pending' && (
@@ -341,6 +376,40 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Complete Session & Rating Modal */}
+      {completingSession && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '400px', textAlign: 'center' }}>
+            <h3 style={{ marginTop: 0 }}>Session Completed! 🎉</h3>
+            <p style={{ fontSize: '14px', color: '#64748b' }}>Rate your micro-mentorship session with {completingSession.mentor?.name}:</p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', margin: '16px 0' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star}
+                  size={28}
+                  onClick={() => setRating(star)}
+                  style={{ cursor: 'pointer', fill: star <= rating ? '#eab308' : 'none', color: star <= rating ? '#eab308' : '#cbd5e1' }}
+                />
+              ))}
+            </div>
+
+            <p style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, marginBottom: '20px' }}>
+              1 Credit will be transferred to {completingSession.mentor?.name}
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleCompleteWithRating} style={{ flex: 1, padding: '10px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}>
+                Submit Rating & Transfer Credit
+              </button>
+              <button onClick={() => setCompletingSession(null)} style={{ padding: '10px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Booking Modal */}
       {selectedMentor && (

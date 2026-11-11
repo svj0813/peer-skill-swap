@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-const API = axios.create({ 
-  baseURL: 'http://localhost:5000/api' 
-});
+const API = axios.create({ baseURL: 'http://localhost:5000/api' });
 
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem('token');
@@ -12,9 +10,9 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
-export const registerUser = (userData) => API.post('/auth/register', userData);
-export const loginUser = (credentials) => API.post('/auth/login', credentials);
-export const fetchMentors = () => API.get('/mentors');
-export const bookSession = (sessionData) => API.post('/sessions/book', sessionData);
+export const loginUser = (data) => API.post('/auth/login', data);
+export const registerUser = (data) => API.post('/auth/register', data);
+export const fetchMentors = () => API.get('/users/mentors');
 export const fetchMySessions = () => API.get('/sessions/my-sessions');
-export const updateSessionStatus = (sessionId, status) => API.patch(`/sessions/${sessionId}/status`, { status });
+export const bookSession = (data) => API.post('/sessions/book', data);
+export const updateSessionStatus = (id, status, rating) => API.put(`/sessions/${id}/status`, { status, rating });
