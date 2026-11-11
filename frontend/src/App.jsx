@@ -2,15 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { fetchMentors, fetchMySessions, loginUser, registerUser, bookSession, updateSessionStatus } from './services/api';
 import { BookOpen, LogOut, Search, Video, X } from 'lucide-react';
 
+const DEPARTMENTS = [
+  'B.Tech - Computer Science',
+  'B.Tech - Electronics & Comm',
+  'B.Tech - Mechanical Engg',
+  'BCA - Computer Applications',
+  'B.Sc - Data Science / AI',
+  'B.Sc - Biotechnology',
+  'B.Com / BBA',
+  'MCA / M.Tech'
+];
+
 export default function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
   const [mentors, setMentors] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [search, setSearch] = useState('');
+  const [selectedDept, setSelectedDept] = useState('All');
   const [activeTab, setActiveTab] = useState('browse');
   
   const [isRegister, setIsRegister] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', department: 'Computer Science' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', department: DEPARTMENTS[0] });
   const [authError, setAuthError] = useState('');
 
   const [selectedMentor, setSelectedMentor] = useState(null);
@@ -18,7 +30,6 @@ export default function App() {
   const [bookingDuration, setBookingDuration] = useState(30);
   const [bookingMode, setBookingMode] = useState('Campus Spot');
 
-  // Video Call State
   const [activeVideoSession, setActiveVideoSession] = useState(null);
 
   useEffect(() => {
@@ -96,17 +107,24 @@ export default function App() {
     }
   };
 
-  const filteredMentors = mentors.filter(m => 
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.skillsToTeach?.some(s => s.skill.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredMentors = mentors.filter(m => {
+    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) ||
+      m.skillsToTeach?.some(s => s.skill.toLowerCase().includes(search.toLowerCase())) ||
+      m.department?.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesDept = selectedDept === 'All' || m.department === selectedDept;
+    return matchesSearch && matchesDept;
+  });
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', padding: '20px' }}>
       <header style={{ maxWidth: '1100px', margin: '0 auto 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '16px 24px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <BookOpen style={{ color: '#2563eb' }} size={28} />
-          <h1 style={{ margin: 0, fontSize: '20px', color: '#1e293b' }}>Peer Skill Swap</h1>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '20px', color: '#1e293b' }}>Peer Skill Swap</h1>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>University-Wide Mentorship (B.Tech, BCA, B.Sc, B.Com)</span>
+          </div>
         </div>
         {user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -126,18 +144,30 @@ export default function App() {
       <main style={{ maxWidth: '1100px', margin: '0 auto' }}>
         {!user ? (
           <div style={{ maxWidth: '400px', margin: '40px auto', background: '#fff', padding: '32px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-            <h2 style={{ marginTop: 0 }}>{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
+            <h2 style={{ marginTop: 0 }}>{isRegister ? 'Create Student Account' : 'Welcome Back'}</h2>
             {authError && <div style={{ color: '#ef4444', marginBottom: '12px', fontSize: '14px' }}>{authError}</div>}
             <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {isRegister && (
-                <input 
-                  type="text" 
-                  placeholder="Full Name" 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  required 
-                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                />
+                <>
+                  <input 
+                    type="text" 
+                    placeholder="Full Name" 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    required 
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <div>
+                    <label style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>Select Degree / Department</label>
+                    <select 
+                      value={formData.department}
+                      onChange={e => setFormData({...formData, department: e.target.value})}
+                      style={{ width: '100%', padding: '10px', marginTop: '4px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                    >
+                      {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                    </select>
+                  </div>
+                </>
               )}
               <input 
                 type="email" 
@@ -185,21 +215,32 @@ export default function App() {
 
             {activeTab === 'browse' ? (
               <div>
-                <div style={{ position: 'relative', marginBottom: '20px' }}>
-                  <Search size={18} style={{ position: 'absolute', left: '14px', top: '14px', color: '#94a3b8' }} />
-                  <input 
-                    type="text"
-                    placeholder="Search by skill (e.g. C++, Python, Circuit Analysis)..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    style={{ width: '100%', padding: '12px 12px 12px 42px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-                  />
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+                    <Search size={18} style={{ position: 'absolute', left: '14px', top: '14px', color: '#94a3b8' }} />
+                    <input 
+                      type="text"
+                      placeholder="Search by skill (e.g., Python, Web Dev, Financial Modeling)..."
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      style={{ width: '100%', padding: '12px 12px 12px 42px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <select 
+                    value={selectedDept}
+                    onChange={e => setSelectedDept(e.target.value)}
+                    style={{ padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer' }}
+                  >
+                    <option value="All">All Degrees & Programs</option>
+                    {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                  </select>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
                   {filteredMentors.length === 0 ? (
                     <div style={{ background: '#fff', padding: '30px', borderRadius: '8px', gridColumn: '1/-1', textAlign: 'center', color: '#64748b' }}>
-                      No peer mentors found.
+                      No peer mentors found matching your search.
                     </div>
                   ) : filteredMentors.map(m => (
                     <div key={m._id} style={{ background: '#fff', borderRadius: '10px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -210,7 +251,7 @@ export default function App() {
                             ⭐ {m.reputation || 5.0}
                           </span>
                         </div>
-                        <p style={{ margin: '4px 0 12px', fontSize: '13px', color: '#64748b' }}>{m.department}</p>
+                        <p style={{ margin: '4px 0 12px', fontSize: '13px', color: '#2563eb', fontWeight: 500 }}>{m.department}</p>
                         
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
                           {m.skillsToTeach?.map((st, idx) => (
@@ -270,7 +311,6 @@ export default function App() {
                               {s.status.toUpperCase()}
                             </span>
 
-                            {/* Show 1-on-1 Video Call Button if Accepted & Online */}
                             {isAccepted && isOnline && (
                               <button 
                                 onClick={() => setActiveVideoSession({ ...s, videoUrl: meetingUrl })}
@@ -280,7 +320,6 @@ export default function App() {
                               </button>
                             )}
 
-                            {/* Show Accept/Decline ONLY if logged-in user is Mentor and pending */}
                             {isMentor && s.status === 'pending' && (
                               <div style={{ display: 'flex', gap: '6px' }}>
                                 <button onClick={() => handleStatusUpdate(s._id, 'accepted')} style={{ padding: '6px 12px', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}>
@@ -308,13 +347,15 @@ export default function App() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: '#fff', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '450px' }}>
             <h3 style={{ marginTop: 0 }}>Book Session with {selectedMentor.name}</h3>
+            <p style={{ fontSize: '13px', color: '#2563eb', margin: '-8px 0 12px 0' }}>{selectedMentor.department}</p>
+            
             <form onSubmit={handleBookSession} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '13px', fontWeight: 500 }}>What concept/bug do you need help with?</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="e.g., Recursion in C++, Figma auto-layout"
+                  placeholder="e.g., Data Structures, React hooks, Financial Ratios"
                   value={bookingTopic} 
                   onChange={e => setBookingTopic(e.target.value)}
                   style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
@@ -328,7 +369,7 @@ export default function App() {
                   onChange={e => setBookingDuration(e.target.value)}
                   style={{ width: '100%', padding: '8px', marginTop: '4px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                 >
-                  <option value={15}>15 Minutes (Quick bug fix)</option>
+                  <option value={15}>15 Minutes (Quick fix)</option>
                   <option value={30}>30 Minutes (Concept review)</option>
                   <option value={45}>45 Minutes (Deep dive)</option>
                 </select>
